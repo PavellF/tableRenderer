@@ -18,10 +18,6 @@ import task.table_renderer.domain.Table;
  */
 public class Generator {
     public static void main( String[] args ) throws IOException {
-    	args = new String[3];
-    	args[0] = "settings.xml";
-    	args[1] = "source-data.tsv";
-    	args[2] = "out.txt";
     	
     	if (args.length != 3) {
     		Logger.getGlobal().log(Level.INFO, "Not enough arguments, examlple:"
