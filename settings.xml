@@ -8,7 +8,7 @@
 	<columns>
 		<column>
 			<title>Номер</title>
-			<width>1</width>
+			<width>8</width>
 		</column>
 		<column>
 			<title>Дата</title>

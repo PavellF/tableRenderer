@@ -6,6 +6,7 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -19,6 +20,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 
 /**
  * Represents a table, immutable.
@@ -55,24 +57,35 @@ public class Table {
 		
 		final int width = settings.flatMap(Settings::getPage).map(Page::getWidth).orElse(0);
 		final int height = settings.flatMap(Settings::getPage).map(Page::getHeight).orElse(0);
+		final int noOfColumns = settings.map(Settings::getColumns).map(cols -> cols.size()).orElse(0);
 		final int overallColWidth = settings.map(Settings::getColumns)
 				.map(cols -> cols.stream().mapToInt(Column::getWidth).sum()).orElse(0);
-		final int padding = 1;
+		final int finalWidthWithPadding = overallColWidth + (noOfColumns * 2);
+		final int freeSpace = width - finalWidthWithPadding;
+		final int appendToEachColumn = freeSpace / noOfColumns;
+		final int appendToEnd;
+		
+		if ((width - finalWidthWithPadding) % noOfColumns == 0) {
+			appendToEnd = 0;
+		} else {
+			appendToEnd = ((width - finalWidthWithPadding) % noOfColumns) - 1;
+		}
 		
 		if (overallColWidth > width) {
 			Logger.getGlobal().log(Level.WARNING, "Overall column width is "
 					+ "greater than requested width.");
+			return "";
 		}
 			
 		final WordHeightTuple delimeter = getRowDelimeter(width);
-		final WordHeightTuple header = getHeader(padding);
+		final WordHeightTuple header = getHeader(appendToEachColumn, appendToEnd);
 		
 		Deque<WordHeightTuple> tableRows = rows.stream().map((Map<Column, String> row) -> {
-			Map<Column, Deque<String>> stringRow = new HashMap<>();
+			Map<Column, Deque<String>> stringRow = new LinkedHashMap<>();
 			row.forEach((Column col, String cell) -> {
 				stringRow.put(col, split(cell, col.getWidth()));
 			});
-			return getRow(padding, stringRow);
+			return getRow(appendToEachColumn, appendToEnd, stringRow);
 		}).collect(Collectors.toCollection(ArrayDeque::new));
 		
 		while (!tableRows.isEmpty()) {
@@ -111,30 +124,26 @@ public class Table {
 		return builder.toString();
 	}
 	
-	private WordHeightTuple getHeader(int padding) {
-		Map<Column, Deque<String>> columnsSplitted = new HashMap<>();
+	private WordHeightTuple getHeader(int appendToEachColumn, int appendToEnd) {
+		Map<Column, Deque<String>> columnsSplitted = new LinkedHashMap<>();
 		
 		rows.get(0).forEach((Column col, String value) -> {
 			columnsSplitted.put(col, split(col.getTitle().orElse("") ,col.getWidth()));
 		});
 		
-		return getRow(padding, columnsSplitted);
+		return getRow(appendToEachColumn, appendToEnd, columnsSplitted);
 	}
 	
-	private WordHeightTuple getRow(int padding, Map<Column, Deque<String>> columnsSplitted) {
+	private WordHeightTuple getRow(int padding, int append, Map<Column, Deque<String>> columnsSplitted) {
 		
 		final int maxHeigth = columnsSplitted.values().stream()
 				.mapToInt(h -> h.size()).max().orElse(0);
 		final StringBuilder output = new StringBuilder(128);
 			
 		for (int i = 0; i < maxHeigth; i++) {
-			output.append('|');
 			
 			columnsSplitted.forEach((Column col, Deque<String> cell) -> {
-				for (int p = 0; p < padding; p++) {
-					output.append(' ');
-				}
-				
+				output.append("| ");
 				int appendSpaces = padding;
 				
 				if (!cell.isEmpty()) {
@@ -148,11 +157,13 @@ public class Table {
 				for (int p = 0; p < appendSpaces; p++) {
 					output.append(' ');
 				}
-					
-				output.append('|');
-				
 			});
-			output.append('\n');
+			
+			for (int p = 0; p < append; p++) {
+				output.append(' ');
+			}
+			
+			output.append("|\n");
 		}
 		
 		return new WordHeightTuple(output.toString(), maxHeigth);
@@ -202,11 +213,11 @@ public class Table {
 		}
 		
 		int lastSpace = -1;
-		String currentSeq = " " + letters;
+		String currentSeq = letters;
 		Deque<String> splitted = new ArrayDeque<>(1);
 		splitted.add(letters);
 		
-		for (int i = 1; i < currentSeq.length(); i++) {
+		for (int i = 0; i < currentSeq.length(); i++) {
 			
 			if (currentSeq.charAt(i) == ' ') {
 				lastSpace = i;
@@ -303,7 +314,7 @@ public class Table {
 					.map(row -> Arrays.asList(row).iterator())
 					.map((Iterator<String> values) -> {
 						
-						Map<Column, String> columnValueMap = new HashMap<>();
+						Map<Column, String> columnValueMap = new LinkedHashMap<>();
 						Iterator<Column> icolumns = columns.iterator();
 						
 						while (icolumns.hasNext() && values.hasNext()) {
