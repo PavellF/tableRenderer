@@ -58,7 +58,7 @@ public class Table {
 		final int noOfColumns = settings.map(Settings::getColumns).map(cols -> cols.size()).orElse(0);
 		final int overallColWidth = settings.map(Settings::getColumns)
 				.map(cols -> cols.stream().mapToInt(Column::getWidth).sum()).orElse(0);
-		final int finalWidthWithPadding = overallColWidth + (noOfColumns * 2);
+		final int finalWidthWithPadding = overallColWidth + 1 + (noOfColumns * 2);
 		final int freeSpace = width - finalWidthWithPadding;
 		final int appendToEachColumn = freeSpace / noOfColumns;
 		final int appendToEnd;
@@ -66,7 +66,7 @@ public class Table {
 		if ((width - finalWidthWithPadding) % noOfColumns == 0) {
 			appendToEnd = 0;
 		} else {
-			appendToEnd = ((width - finalWidthWithPadding) % noOfColumns) - 1;
+			appendToEnd = ((width - finalWidthWithPadding) % noOfColumns);
 		}
 		
 		if (finalWidthWithPadding > width) {
