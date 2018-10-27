@@ -48,7 +48,6 @@ public class Table {
 	public String toString() {
 		
 		if (rows.isEmpty()) {
-			
 			return "";
 		}
 		
@@ -56,21 +55,18 @@ public class Table {
 		
 		final int width = settings.flatMap(Settings::getPage).map(Page::getWidth).orElse(0);
 		final int height = settings.flatMap(Settings::getPage).map(Page::getHeight).orElse(0);
-		final int noOfColumns = settings.map(Settings::getColumns).map(cols -> cols.size()).orElse(0);
-		final int owerallColWidth = settings.map(Settings::getColumns)
+		final int overallColWidth = settings.map(Settings::getColumns)
 				.map(cols -> cols.stream().mapToInt(Column::getWidth).sum()).orElse(0);
-		final int padding = (width - owerallColWidth) / (noOfColumns * 2);
+		final int padding = 1;
+		
+		if (overallColWidth > width) {
+			Logger.getGlobal().log(Level.WARNING, "Overall column width is "
+					+ "greater than requested width.");
+		}
 			
 		final WordHeightTuple delimeter = getRowDelimeter(width);
+		final WordHeightTuple header = getHeader(padding);
 		
-		Map<Column, Deque<String>> columnsSplitted = rows.get(0).keySet()
-				.stream().collect(Collectors.toMap((Column col) -> {
-			return col;
-		}, (Column col) -> {
-			return split(col.getTitle().orElse("") ,col.getWidth());
-		}));
-		
-		final WordHeightTuple header = getRow(padding, columnsSplitted);
 		Deque<WordHeightTuple> tableRows = rows.stream().map((Map<Column, String> row) -> {
 			Map<Column, Deque<String>> stringRow = new HashMap<>();
 			row.forEach((Column col, String cell) -> {
@@ -79,14 +75,13 @@ public class Table {
 			return getRow(padding, stringRow);
 		}).collect(Collectors.toCollection(ArrayDeque::new));
 		
-		
 		while (!tableRows.isEmpty()) {
 			int currentHeight = 0;
 			builder.append(header.word);
 			currentHeight += header.finalHeigth;
 			
-			if (currentHeight > height) {
-				Logger.getGlobal().log(Level.WARNING, "Required length too small to build a table.");
+			if (currentHeight >= height) {
+				Logger.getGlobal().log(Level.WARNING, "Required height too small to build a table.");
 				return "";
 			}
 			
@@ -116,6 +111,15 @@ public class Table {
 		return builder.toString();
 	}
 	
+	private WordHeightTuple getHeader(int padding) {
+		Map<Column, Deque<String>> columnsSplitted = new HashMap<>();
+		
+		rows.get(0).forEach((Column col, String value) -> {
+			columnsSplitted.put(col, split(col.getTitle().orElse("") ,col.getWidth()));
+		});
+		
+		return getRow(padding, columnsSplitted);
+	}
 	
 	private WordHeightTuple getRow(int padding, Map<Column, Deque<String>> columnsSplitted) {
 		
@@ -198,11 +202,11 @@ public class Table {
 		}
 		
 		int lastSpace = -1;
-		String currentSeq = letters;
+		String currentSeq = " " + letters;
 		Deque<String> splitted = new ArrayDeque<>(1);
 		splitted.add(letters);
 		
-		for (int i = 0; i < currentSeq.length(); i++) {
+		for (int i = 1; i < currentSeq.length(); i++) {
 			
 			if (currentSeq.charAt(i) == ' ') {
 				lastSpace = i;
@@ -226,7 +230,7 @@ public class Table {
 			}
 			
 		}
-		//normalize strings
+		//append strings with spaces
 		splitted.stream().map((String s) -> {
 			StringBuilder builder = new StringBuilder(s);
 			for (int i = 0; i < maxWidth - s.length(); i++) {
