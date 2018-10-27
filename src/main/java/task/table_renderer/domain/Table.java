@@ -69,7 +69,7 @@ public class Table {
 			appendToEnd = ((width - finalWidthWithPadding) % noOfColumns) - 1;
 		}
 		
-		if (overallColWidth > width) {
+		if (finalWidthWithPadding > width) {
 			Logger.getGlobal().log(Level.WARNING, "Overall column width is "
 					+ "greater than requested width.");
 			return "";
