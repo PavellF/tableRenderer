@@ -14,16 +14,14 @@ import task.table_renderer.domain.Table;
 
 /**
  * Console reporting app.
- * java -jar table-renderer-1.0-jar-with-dependencies.jar /Users/macuser/Desktop/Simple\ test\ task/settings.xml /Users/macuser/Desktop/Simple\ test\ task/source-data.tsv out.txt
- * mvn clean compile assembly:single
- *
+ * 
  */
 public class Generator {
     public static void main( String[] args ) throws IOException {
         
     	if (args.length != 3) {
     		Logger.getGlobal().log(Level.INFO, "Not enough arguments, examlple:"
-    				+ "\njava Generator.class settings.xml source-data.tsv example-report.txt ");
+    				+ "\njava -jar reportApp.jar settings.xml source-data.tsv out.txt");
     		System.exit(0);
     	}
         
